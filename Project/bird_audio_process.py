@@ -12,8 +12,15 @@ import subprocess
 import csv
 from csv import writer
 
-directory = "IndianaBirds"
+#Keras imports
+import keras
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, Dropout, Flatten, MaxPooling2D
+from keras.models import model_from_json
+import pandas as pd
 
+directory = "IndianaBirds"
+num_classes = 10
 
 def create_spectrogram():
     # imheight = 50
@@ -22,8 +29,8 @@ def create_spectrogram():
     test_dir = "Spectrograms/test_spectr"
     os.mkdir(train_dir)
     os.mkdir(test_dir)
-    train_list = []
-    test_list = []
+    train_list = [["path", "label"]]
+    test_list = [["path", "label"]]
     for bird in os.listdir(directory):
         dir_len = len(os.listdir(directory + "/" + bird)[:5])
         train_count = round(dir_len * 0.7)
@@ -31,10 +38,10 @@ def create_spectrogram():
         for filename in os.listdir(directory + "/" + bird)[:5]:
             if count <= train_count:
                 new_dir = train_dir
-                train_list.append([filename, bird])
+                train_list.append([new_dir + "/" + filename.split(".")[0] + ".png", bird])
             else:
                 new_dir = test_dir
-                test_list.append([filename, bird])
+                test_list.append([new_dir + "/" + filename.split(".")[0] + ".png", bird])
             src = directory + "/" + bird + "/" + filename
             save_path = new_dir + "/" + filename.split(".")[0] + ".png"
             # print(src)
@@ -86,4 +93,42 @@ trl, tel = create_spectrogram()
 list_to_csv(trl, tel)
 # print(trl)
 # print(tel)
+
+
+#Create Keras Model
+
+def create_model(trl, tel):
+    train = pd.read_csv("train.csv")
+    test = pd.read_csv("test.csv")
+    x_train, y_train, x_test, y_test = train, train[-1], test, test[-1]
+
+    print("Size of Training Data:", np.shape(x_train))
+    print("Size of Training Labels:", np.shape(y_train))
+    print("Size of Test Data:", np.shape(x_test))
+    print("Size of Test Labels:", np.shape(y_test))
+
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
+
+    x_train = x_train.reshape(x_train.shape[0], 1)
+    x_test = x_test.reshape(x_test.shape[0], 1)
+    input_shape = (1)
+    batch_size = 4
+    epochs = 1
+
+    model = Sequential()
+    model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
+    model.add(Conv2D(64, kernel_size=(3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(num_classes, activation='softmax'))
+
+    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.adam(), metrics=['accuracy'])
+    print(model.summary())
+
+    model.fit(x_train, y_train, batch_size=4, epochs=10, verbose=1, validation_data=(x_test, y_test))
+    return model
 
