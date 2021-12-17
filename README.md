@@ -4,6 +4,7 @@ This project aims at identifying birds based on their bird calls. The tasks carr
 
 # CNN Model
 The CNN Model used is represented graphically using the below figure. It provides information about all the layers that are used for the model design.
+
 ![image](https://user-images.githubusercontent.com/82420256/146591531-e867a5d8-68e5-4622-992f-a6a331dbd265.png)
 
 # Results
